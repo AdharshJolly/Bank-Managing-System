@@ -22,6 +22,10 @@ public class Account implements User {
     private int failedLoginAttempts = 0;
     private boolean loginLocked = false;
 
+    private static final double DAILY_WITHDRAWAL_LIMIT = 50_000.0;
+    private LocalDate lastWithdrawalDate = null;
+    private double dailyWithdrawnAmount = 0.0;
+
     public Account() {
         this.accountNumber = accountNumberSeed++;
     }
@@ -171,6 +175,7 @@ public class Account implements User {
             throw new IllegalArgumentException(
                     "Insufficient funds. Max withdrawable: " + (balance - minimumBalance));
         }
+        checkAndUpdateDailyLimit(amount);
         this.balance -= amount;
         transactions.add(new Transaction(TransactionType.WITHDRAWAL, amount, this.balance, this.accountNumber));
     }
@@ -200,6 +205,7 @@ public class Account implements User {
             throw new IllegalArgumentException(
                     "Insufficient funds. Max withdrawable: " + (balance - minimumBalance));
         }
+        checkAndUpdateDailyLimit(amount);
         this.balance -= amount;
         transactions.add(new Transaction(TransactionType.TRANSFER_DEBIT, amount, this.balance, this.accountNumber));
     }
@@ -220,5 +226,19 @@ public class Account implements User {
     // CurrentAccount).
     protected double getMinimumBalance() {
         return 0;
+    }
+
+    private void checkAndUpdateDailyLimit(double amount) {
+        LocalDate today = LocalDate.now();
+        if (lastWithdrawalDate == null || !lastWithdrawalDate.equals(today)) {
+            dailyWithdrawnAmount = 0.0;
+            lastWithdrawalDate = today;
+        }
+        if (dailyWithdrawnAmount + amount > DAILY_WITHDRAWAL_LIMIT) {
+            throw new IllegalArgumentException(String.format(
+                    "Daily withdrawal limit of %.2f reached. Already withdrawn: %.2f today.",
+                    DAILY_WITHDRAWAL_LIMIT, dailyWithdrawnAmount));
+        }
+        dailyWithdrawnAmount += amount;
     }
 }
