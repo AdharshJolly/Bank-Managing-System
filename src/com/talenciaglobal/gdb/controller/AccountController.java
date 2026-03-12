@@ -17,6 +17,7 @@ public class AccountController {
     private final AccountRepository repository;
     private final EmployeeRepository employeeRepository;
     private BankEmployee activeEmployee;
+    private Account activeUserAccount;
 
     public AccountController(Scanner scanner, AccountRepository repository, EmployeeRepository employeeRepository) {
         this.scanner = scanner;
@@ -26,6 +27,32 @@ public class AccountController {
 
     public BankEmployee getActiveEmployee() {
         return activeEmployee;
+    }
+
+    public Account getActiveUserAccount() {
+        return activeUserAccount;
+    }
+
+    public void loginUser() {
+        System.out.print("Account Number: ");
+        long id = Long.parseLong(scanner.nextLine().trim());
+        System.out.print("PIN: ");
+        String pin = scanner.nextLine().trim();
+        Account account = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
+        if (!account.authenticate(pin)) {
+            throw new IllegalArgumentException("Incorrect PIN.");
+        }
+        this.activeUserAccount = account;
+        System.out.println("Welcome, " + account.getName() + "!");
+    }
+
+    public void logoutUser() {
+        if (activeUserAccount == null) {
+            throw new IllegalStateException("No user is currently logged in.");
+        }
+        System.out.println("Goodbye, " + activeUserAccount.getName() + "!");
+        activeUserAccount = null;
     }
 
     public void loginEmployee() {
@@ -114,6 +141,7 @@ public class AccountController {
     }
 
     public void activateAccount() {
+        requireEmployee();
         Account account = findAccountOrThrow();
         account.activateAccount();
         repository.save(account);
@@ -121,6 +149,7 @@ public class AccountController {
     }
 
     public void closeAccount() {
+        requireEmployee();
         Account account = findAccountOrThrow();
         account.closeAccount();
         repository.save(account);
@@ -166,6 +195,7 @@ public class AccountController {
     }
 
     public void listAll() {
+        requireEmployee();
         var accounts = repository.findAll();
         if (accounts.isEmpty()) {
             System.out.println("No accounts found.");
@@ -219,7 +249,14 @@ public class AccountController {
     }
 
     public void viewTransactionHistory() {
-        Account account = findAccountOrThrow();
+        Account account;
+        if (activeEmployee != null) {
+            account = findAccountOrThrow();
+        } else if (activeUserAccount != null) {
+            account = activeUserAccount;
+        } else {
+            throw new IllegalStateException("Access denied. Please log in to view transaction history.");
+        }
         var txns = account.getTransactions();
         if (txns.isEmpty()) {
             System.out.println("No transactions found for account " + account.getAccountNumber() + ".");
@@ -237,6 +274,12 @@ public class AccountController {
                     t.getTimestamp().toString().replace("T", " ").substring(0, 19));
         }
         System.out.println("=".repeat(75));
+    }
+
+    private void requireEmployee() {
+        if (activeEmployee == null) {
+            throw new IllegalStateException("Access denied. This operation requires an employee login.");
+        }
     }
 
     private Account findAccountOrThrow() {
