@@ -5,6 +5,7 @@ import com.talenciaglobal.gdb.model.Account;
 import com.talenciaglobal.gdb.model.BankEmployee;
 import com.talenciaglobal.gdb.model.EmployeeRole;
 import com.talenciaglobal.gdb.repository.AccountRepository;
+import com.talenciaglobal.gdb.repository.AuditLogRepository;
 import com.talenciaglobal.gdb.repository.EmployeeRepository;
 
 public class App {
@@ -12,13 +13,15 @@ public class App {
         Scanner scanner = new Scanner(System.in);
         AccountRepository accountRepository = new AccountRepository();
         EmployeeRepository employeeRepository = new EmployeeRepository();
+        AuditLogRepository auditLogRepository = new AuditLogRepository();
 
         // Pre-seeded staff
         employeeRepository.save(new BankEmployee("Alice Admin", EmployeeRole.ADMIN, "1111"));
         employeeRepository.save(new BankEmployee("Bob Teller", EmployeeRole.TELLER, "2222"));
         employeeRepository.save(new BankEmployee("Carol Manager", EmployeeRole.MANAGER, "3333"));
 
-        AccountController controller = new AccountController(scanner, accountRepository, employeeRepository);
+        AccountController controller = new AccountController(scanner, accountRepository, employeeRepository,
+                auditLogRepository);
 
         boolean running = true;
         while (running) {
@@ -85,6 +88,7 @@ public class App {
                 System.out.println(" 15. Create Employee");
                 System.out.println(" 16. Deactivate Employee");
                 System.out.println(" 17. List All Employees");
+                System.out.println(" 18. View Audit Log");
             }
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
@@ -112,6 +116,7 @@ public class App {
                     case "15" -> controller.createEmployee();
                     case "16" -> controller.deactivateEmployee();
                     case "17" -> controller.listAllEmployees();
+                    case "18" -> controller.viewAuditLog();
                     case "0" -> {
                         controller.logoutEmployee();
                         active = false;

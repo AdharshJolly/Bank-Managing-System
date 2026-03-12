@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Scanner;
 
 import com.talenciaglobal.gdb.model.Account;
+import com.talenciaglobal.gdb.model.AuditEntry;
 import com.talenciaglobal.gdb.model.BankEmployee;
 import com.talenciaglobal.gdb.model.CurrentAccount;
 import com.talenciaglobal.gdb.model.EmployeeRole;
@@ -12,19 +13,23 @@ import com.talenciaglobal.gdb.model.Privilege;
 import com.talenciaglobal.gdb.model.SavingsAccount;
 import com.talenciaglobal.gdb.model.Transaction;
 import com.talenciaglobal.gdb.repository.AccountRepository;
+import com.talenciaglobal.gdb.repository.AuditLogRepository;
 import com.talenciaglobal.gdb.repository.EmployeeRepository;
 
 public class AccountController {
     private final Scanner scanner;
     private final AccountRepository repository;
     private final EmployeeRepository employeeRepository;
+    private final AuditLogRepository auditLog;
     private BankEmployee activeEmployee;
     private Account activeUserAccount;
 
-    public AccountController(Scanner scanner, AccountRepository repository, EmployeeRepository employeeRepository) {
+    public AccountController(Scanner scanner, AccountRepository repository,
+            EmployeeRepository employeeRepository, AuditLogRepository auditLog) {
         this.scanner = scanner;
         this.repository = repository;
         this.employeeRepository = employeeRepository;
+        this.auditLog = auditLog;
     }
 
     // ──────────────── Session management ────────────────
@@ -168,6 +173,7 @@ public class AccountController {
         account.setBalance(balance);
         account.setPrivilege(privilege);
         repository.save(account);
+        audit("CREATE_ACCOUNT", account.getAccountNumber());
         System.out.println("Account created successfully. Account Number: " + account.getAccountNumber());
         return account;
     }
@@ -177,6 +183,7 @@ public class AccountController {
         Account account = findAccountByNumber();
         account.activateAccount();
         repository.save(account);
+        audit("ACTIVATE_ACCOUNT", account.getAccountNumber());
         System.out.println("Account " + account.getAccountNumber() + " activated successfully.");
     }
 
@@ -185,6 +192,7 @@ public class AccountController {
         Account account = findAccountByNumber();
         account.closeAccount();
         repository.save(account);
+        audit("CLOSE_ACCOUNT", account.getAccountNumber());
         System.out.println("Account " + account.getAccountNumber() + " closed.");
     }
 
@@ -194,6 +202,7 @@ public class AccountController {
         double amount = Double.parseDouble(scanner.nextLine().trim());
         account.deposit(amount);
         repository.save(account);
+        audit("DEPOSIT", account.getAccountNumber());
         System.out.printf("Deposited %.2f. New balance: %.2f%n", amount, account.getBalance());
     }
 
@@ -203,6 +212,7 @@ public class AccountController {
         double amount = Double.parseDouble(scanner.nextLine().trim());
         account.withdraw(amount);
         repository.save(account);
+        audit("WITHDRAWAL", account.getAccountNumber());
         System.out.printf("Withdrew %.2f. New balance: %.2f%n", amount, account.getBalance());
     }
 
@@ -223,6 +233,7 @@ public class AccountController {
         target.depositTransfer(amount);
         repository.save(source);
         repository.save(target);
+        audit("TRANSFER from " + fromId + " to " + toId, source.getAccountNumber());
         System.out.printf("Transferred %.2f from %d to %d.%n", amount, fromId, toId);
     }
 
@@ -256,6 +267,7 @@ public class AccountController {
         double interest = sa.calculateInterest();
         sa.depositInterest(interest);
         repository.save(sa);
+        audit("APPLY_INTEREST", sa.getAccountNumber());
         System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
                 interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
     }
@@ -282,6 +294,7 @@ public class AccountController {
         }
         System.out.println("---------------------------------------------------");
         System.out.printf("Applied interest to %d account(s). Total credited: %.2f%n", count, total);
+        audit("BATCH_INTEREST (" + count + " accounts)", null);
     }
 
     public void viewTransactionHistory() {
@@ -377,6 +390,7 @@ public class AccountController {
         }
         account.unlockLogin();
         repository.save(account);
+        audit("UNLOCK_CUSTOMER", account.getAccountNumber());
         System.out.println("Account " + account.getAccountNumber() + " (" + account.getName() + ") has been unlocked.");
     }
 
@@ -390,6 +404,7 @@ public class AccountController {
             throw new IllegalStateException("Employee " + id + " is not locked.");
         }
         emp.unlockLogin();
+        audit("UNLOCK_EMPLOYEE " + emp.getEmployeeId(), null);
         System.out.println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been unlocked.");
     }
 
@@ -406,6 +421,7 @@ public class AccountController {
         Privilege newPrivilege = Privilege.values()[choice - 1];
         account.setPrivilege(newPrivilege);
         repository.save(account);
+        audit("CHANGE_PRIVILEGE to " + newPrivilege, account.getAccountNumber());
         System.out.println("Privilege for account " + account.getAccountNumber()
                 + " updated to " + newPrivilege + ".");
     }
@@ -416,12 +432,14 @@ public class AccountController {
         String name = scanner.nextLine().trim();
         System.out.print("Role (1=TELLER  2=MANAGER  3=ADMIN): ");
         int roleChoice = Integer.parseInt(scanner.nextLine().trim());
-        if (roleChoice < 1 || roleChoice > 3) throw new IllegalArgumentException("Invalid role choice.");
+        if (roleChoice < 1 || roleChoice > 3)
+            throw new IllegalArgumentException("Invalid role choice.");
         EmployeeRole role = EmployeeRole.values()[roleChoice - 1];
         System.out.print("PIN (4 digits): ");
         String pin = scanner.nextLine().trim();
         BankEmployee emp = new BankEmployee(name, role, pin);
         employeeRepository.save(emp);
+        audit("CREATE_EMPLOYEE " + emp.getEmployeeId(), null);
         System.out.println("Employee created: " + emp);
     }
 
@@ -436,7 +454,9 @@ public class AccountController {
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
         emp.deactivate();
         employeeRepository.save(emp);
-        System.out.println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been deactivated.");
+        audit("DEACTIVATE_EMPLOYEE " + emp.getEmployeeId(), null);
+        System.out
+                .println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been deactivated.");
     }
 
     public void listAllEmployees() {
@@ -451,6 +471,27 @@ public class AccountController {
                     emp.isActive() ? "ACTIVE" : "DEACTIVATED");
         }
         System.out.println("======================================================");
+    }
+
+    public void viewAuditLog() {
+        requireRole(activeEmployee.getRole().canUnlockEmployees(), "Audit Log requires ADMIN role.");
+        var entries = auditLog.findAll();
+        if (entries.isEmpty()) {
+            System.out.println("No audit entries found.");
+            return;
+        }
+        System.out.println("\n===== Audit Log =====");
+        System.out.printf("%-6s %-10s %-20s %-40s %-15s %-s%n",
+                "ID", "EmpID", "EmpName", "Action", "AccountNum", "Timestamp");
+        System.out.println("--------------------------------------------------------------------------");
+        for (var e : entries) {
+            System.out.printf("%-6d %-10s %-20s %-40s %-15s %s%n",
+                    e.getEntryId(), e.getEmployeeId(), e.getEmployeeName(),
+                    e.getAction(),
+                    e.getTargetAccountNumber() != null ? e.getTargetAccountNumber().toString() : "-",
+                    e.getTimestamp());
+        }
+        System.out.println("==========================================================================");
     }
 
     // ────────────────────── Shared helpers ──────────────────────
@@ -512,5 +553,15 @@ public class AccountController {
         long id = Long.parseLong(scanner.nextLine().trim());
         return repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
+    }
+
+    private void audit(String action, Long targetAccountNumber) {
+        if (activeEmployee != null) {
+            auditLog.log(new AuditEntry(
+                    activeEmployee.getEmployeeId(),
+                    activeEmployee.getEmployeeName(),
+                    action,
+                    targetAccountNumber));
+        }
     }
 }
