@@ -9,6 +9,7 @@ import com.talenciaglobal.gdb.model.EmployeeRole;
 import com.talenciaglobal.gdb.repository.AccountRepository;
 import com.talenciaglobal.gdb.repository.AuditLogRepository;
 import com.talenciaglobal.gdb.repository.EmployeeRepository;
+import com.talenciaglobal.gdb.service.AccountService;
 
 public class App {
     public static void main(String[] args) {
@@ -16,13 +17,14 @@ public class App {
         AccountRepository accountRepository = new AccountRepository();
         EmployeeRepository employeeRepository = new EmployeeRepository();
         AuditLogRepository auditLogRepository = new AuditLogRepository();
+        AccountService accountService = new AccountService(accountRepository);
 
         // Pre-seeded staff
         employeeRepository.save(new BankEmployee("Alice Admin", EmployeeRole.ADMIN, "1111"));
         employeeRepository.save(new BankEmployee("Bob Teller", EmployeeRole.TELLER, "2222"));
         employeeRepository.save(new BankEmployee("Carol Manager", EmployeeRole.MANAGER, "3333"));
 
-        AccountController controller = new AccountController(scanner, accountRepository, employeeRepository,
+        AccountController controller = new AccountController(scanner, accountService, employeeRepository,
                 auditLogRepository);
 
         boolean running = true;

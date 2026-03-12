@@ -142,10 +142,10 @@ public class Account implements User {
         if (!isActive) {
             throw new IllegalStateException("Account is not active.");
         }
-        if (balance > 0) {
+        if (balance != 0) {
             throw new IllegalStateException(
                     String.format(
-                            "Cannot close account with a positive balance of %.2f. Please withdraw or transfer all funds first.",
+                            "Cannot close account with a non-zero balance of %.2f. Please withdraw or transfer all funds first.",
                             balance));
         }
         this.isActive = false;

@@ -1,0 +1,31 @@
+name: Build
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up JDK 17
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "17"
+                  distribution: "temurin"
+
+            - name: Compile
+              run: |
+                  mkdir -p bin
+                  javac -d bin \
+                    src/com/talenciaglobal/gdb/model/*.java \
+                    src/com/talenciaglobal/gdb/repository/*.java \
+                    src/com/talenciaglobal/gdb/service/*.java \
+                    src/com/talenciaglobal/gdb/controller/*.java \
+                    src/App.java

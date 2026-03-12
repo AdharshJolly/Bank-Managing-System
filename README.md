@@ -1,5 +1,9 @@
 # GlobalDigitalBank
 
+[![Build](https://github.com/AdharshJolly/Bank-Managing-System/actions/workflows/build.yml/badge.svg)](https://github.com/AdharshJolly/Bank-Managing-System/actions/workflows/build.yml)
+[![Java](https://img.shields.io/badge/Java-17%2B-blue?logo=openjdk)](https://openjdk.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 A Java console-based digital banking application with a layered MVC-like architecture, dual-portal design, and role-based access control.
 
 ---
