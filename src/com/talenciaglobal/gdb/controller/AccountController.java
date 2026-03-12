@@ -25,34 +25,14 @@ public class AccountController {
         this.employeeRepository = employeeRepository;
     }
 
+    // ──────────────── Session management ────────────────
+
     public BankEmployee getActiveEmployee() {
         return activeEmployee;
     }
 
     public Account getActiveUserAccount() {
         return activeUserAccount;
-    }
-
-    public void loginUser() {
-        System.out.print("Account Number: ");
-        long id = Long.parseLong(scanner.nextLine().trim());
-        System.out.print("PIN: ");
-        String pin = scanner.nextLine().trim();
-        Account account = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
-        if (!account.authenticate(pin)) {
-            throw new IllegalArgumentException("Incorrect PIN.");
-        }
-        this.activeUserAccount = account;
-        System.out.println("Welcome, " + account.getName() + "!");
-    }
-
-    public void logoutUser() {
-        if (activeUserAccount == null) {
-            throw new IllegalStateException("No user is currently logged in.");
-        }
-        System.out.println("Goodbye, " + activeUserAccount.getName() + "!");
-        activeUserAccount = null;
     }
 
     public void loginEmployee() {
@@ -70,17 +50,36 @@ public class AccountController {
     }
 
     public void logoutEmployee() {
-        if (activeEmployee == null) {
-            throw new IllegalStateException("No employee is currently logged in.");
-        }
         System.out.println("Goodbye, " + activeEmployee.getEmployeeName() + "!");
         activeEmployee = null;
     }
 
-    public Account create() {
-        if (activeEmployee == null) {
-            throw new IllegalStateException("Access denied. An employee must be logged in to create an account.");
+    public void loginUser() {
+        System.out.print("Account Number: ");
+        long id = Long.parseLong(scanner.nextLine().trim());
+        System.out.print("PIN: ");
+        String pin = scanner.nextLine().trim();
+        Account account = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
+        if (!account.isActive()) {
+            throw new IllegalStateException("Account is not active. Please visit a branch.");
         }
+        if (!account.authenticate(pin)) {
+            throw new IllegalArgumentException("Incorrect PIN.");
+        }
+        this.activeUserAccount = account;
+        System.out.println("Welcome, " + account.getName() + "!");
+    }
+
+    public void logoutUser() {
+        System.out.println("Goodbye, " + activeUserAccount.getName() + "!");
+        activeUserAccount = null;
+    }
+
+    // ──────────────── Employee Portal operations ────────────────
+    // All ask for account numbers — the employee operates on any customer.
+
+    public Account create() {
         System.out.println("\n-------- Create New Account --------");
         System.out.println(
                 "Creating on behalf of: " + activeEmployee.getEmployeeName() + " [" + activeEmployee.getRole() + "]");
@@ -141,23 +140,21 @@ public class AccountController {
     }
 
     public void activateAccount() {
-        requireEmployee();
-        Account account = findAccountOrThrow();
+        Account account = findAccountByNumber();
         account.activateAccount();
         repository.save(account);
         System.out.println("Account " + account.getAccountNumber() + " activated successfully.");
     }
 
     public void closeAccount() {
-        requireEmployee();
-        Account account = findAccountOrThrow();
+        Account account = findAccountByNumber();
         account.closeAccount();
         repository.save(account);
         System.out.println("Account " + account.getAccountNumber() + " closed.");
     }
 
     public void deposit() {
-        Account account = findAccountOrThrow();
+        Account account = findAccountByNumber();
         System.out.print("Deposit amount: ");
         double amount = Double.parseDouble(scanner.nextLine().trim());
         account.deposit(amount);
@@ -166,7 +163,7 @@ public class AccountController {
     }
 
     public void withdraw() {
-        Account account = findAccountOrThrow();
+        Account account = findAccountByNumber();
         System.out.print("Withdrawal amount: ");
         double amount = Double.parseDouble(scanner.nextLine().trim());
         account.withdraw(amount);
@@ -194,8 +191,12 @@ public class AccountController {
         System.out.printf("Transferred %.2f from %d to %d.%n", amount, fromId, toId);
     }
 
+    public void viewAccount() {
+        Account account = findAccountByNumber();
+        display(account);
+    }
+
     public void listAll() {
-        requireEmployee();
         var accounts = repository.findAll();
         if (accounts.isEmpty()) {
             System.out.println("No accounts found.");
@@ -209,6 +210,69 @@ public class AccountController {
         }
         System.out.println("=================================");
     }
+
+    public void applyInterest() {
+        Account account = findAccountByNumber();
+        if (!(account instanceof SavingsAccount sa)) {
+            throw new IllegalArgumentException("Interest can only be applied to Savings Accounts.");
+        }
+        double interest = sa.calculateInterest();
+        sa.depositInterest(interest);
+        repository.save(sa);
+        System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
+                interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
+    }
+
+    public void viewTransactionHistory() {
+        Account account = findAccountByNumber();
+        displayTransactionHistory(account);
+    }
+
+    // ──────────────── Customer Self-Service operations ────────────────
+    // All scoped to the logged-in customer's own account.
+
+    public void depositOwn() {
+        System.out.print("Deposit amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+        activeUserAccount.deposit(amount);
+        repository.save(activeUserAccount);
+        System.out.printf("Deposited %.2f. New balance: %.2f%n", amount, activeUserAccount.getBalance());
+    }
+
+    public void withdrawOwn() {
+        System.out.print("Withdrawal amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+        activeUserAccount.withdraw(amount);
+        repository.save(activeUserAccount);
+        System.out.printf("Withdrew %.2f. New balance: %.2f%n", amount, activeUserAccount.getBalance());
+    }
+
+    public void transferFromOwn() {
+        System.out.print("Target Account Number: ");
+        long toId = Long.parseLong(scanner.nextLine().trim());
+        System.out.print("Transfer amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+
+        Account target = repository.findById(toId)
+                .orElseThrow(() -> new IllegalArgumentException("Target account not found: " + toId));
+
+        activeUserAccount.withdrawTransfer(amount);
+        target.depositTransfer(amount);
+        repository.save(activeUserAccount);
+        repository.save(target);
+        System.out.printf("Transferred %.2f to %d. New balance: %.2f%n",
+                amount, toId, activeUserAccount.getBalance());
+    }
+
+    public void viewOwnAccount() {
+        display(activeUserAccount);
+    }
+
+    public void viewOwnTransactionHistory() {
+        displayTransactionHistory(activeUserAccount);
+    }
+
+    // ──────────────── Shared helpers ────────────────
 
     public void display(Account account) {
         System.out.println("\n------------Account Details------------");
@@ -236,27 +300,7 @@ public class AccountController {
         System.out.println("---------------------------------------");
     }
 
-    public void applyInterest() {
-        Account account = findAccountOrThrow();
-        if (!(account instanceof SavingsAccount sa)) {
-            throw new IllegalArgumentException("Interest can only be applied to Savings Accounts.");
-        }
-        double interest = sa.calculateInterest();
-        sa.depositInterest(interest);
-        repository.save(sa);
-        System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
-                interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
-    }
-
-    public void viewTransactionHistory() {
-        Account account;
-        if (activeEmployee != null) {
-            account = findAccountOrThrow();
-        } else if (activeUserAccount != null) {
-            account = activeUserAccount;
-        } else {
-            throw new IllegalStateException("Access denied. Please log in to view transaction history.");
-        }
+    private void displayTransactionHistory(Account account) {
         var txns = account.getTransactions();
         if (txns.isEmpty()) {
             System.out.println("No transactions found for account " + account.getAccountNumber() + ".");
@@ -276,13 +320,7 @@ public class AccountController {
         System.out.println("=".repeat(75));
     }
 
-    private void requireEmployee() {
-        if (activeEmployee == null) {
-            throw new IllegalStateException("Access denied. This operation requires an employee login.");
-        }
-    }
-
-    private Account findAccountOrThrow() {
+    private Account findAccountByNumber() {
         System.out.print("Account Number: ");
         long id = Long.parseLong(scanner.nextLine().trim());
         return repository.findById(id)
