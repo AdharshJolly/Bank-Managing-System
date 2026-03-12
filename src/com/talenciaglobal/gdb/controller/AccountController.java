@@ -105,6 +105,7 @@ public class AccountController {
 
     public Account create() {
         requireRole(activeEmployee.getRole().canCreateAccounts(), "Create Account requires MANAGER or ADMIN role.");
+        System.out.println("\n-------- Create New Account --------");
         System.out.println(
                 "Creating on behalf of: " + activeEmployee.getEmployeeName() + " [" + activeEmployee.getRole() + "]");
         System.out.println("Account Type:");

@@ -56,20 +56,28 @@ public class App {
         boolean active = true;
         while (active) {
             BankEmployee emp = controller.getActiveEmployee();
-            System.out.println("\n===== Employee Portal =====");
-            System.out.println("  Logged in: " + emp.getEmployeeName() + " [" + emp.getRole() + "]");
+            EmployeeRole role = emp.getRole();
+            System.out.println("\n===== Employee Portal =====\n  " + emp.getEmployeeName() + " [" + role + "]");
             System.out.println("---------------------------");
-            System.out.println("  1. Create Account");
-            System.out.println("  2. Activate Account");
+            // Teller and above
             System.out.println("  3. Deposit");
             System.out.println("  4. Withdraw");
             System.out.println("  5. Transfer");
             System.out.println("  6. View Account");
-            System.out.println("  7. List All Accounts");
-            System.out.println("  8. Close Account");
-            System.out.println("  9. Apply Interest (Savings)");
             System.out.println(" 10. View Transaction History");
-            System.out.println(" 11. Unlock Customer Account");
+            // Manager and above
+            if (role.canCreateAccounts()) {
+                System.out.println("  1. Create Account");
+                System.out.println("  2. Activate Account");
+                System.out.println("  7. List All Accounts");
+                System.out.println("  8. Close Account");
+                System.out.println("  9. Apply Interest (Savings)");
+                System.out.println(" 11. Unlock Customer Account");
+            }
+            // Admin only
+            if (role.canUnlockEmployees()) {
+                System.out.println(" 12. Unlock Employee Account");
+            }
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
 
@@ -89,6 +97,7 @@ public class App {
                     case "9" -> controller.applyInterest();
                     case "10" -> controller.viewTransactionHistory();
                     case "11" -> controller.unlockCustomerAccount();
+                    case "12" -> controller.unlockEmployeeAccount();
                     case "0" -> {
                         controller.logoutEmployee();
                         active = false;
