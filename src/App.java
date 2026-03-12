@@ -65,6 +65,7 @@ public class App {
             System.out.println("  5. Transfer");
             System.out.println("  6. View Account");
             System.out.println(" 10. View Transaction History");
+            System.out.println("  S. Search Customer by Name");
             // Manager and above
             if (role.canCreateAccounts()) {
                 System.out.println("  1. Create Account");
@@ -96,6 +97,7 @@ public class App {
                     case "8" -> controller.closeAccount();
                     case "9" -> controller.applyInterest();
                     case "10" -> controller.viewTransactionHistory();
+                    case "S" -> controller.searchByName();
                     case "11" -> controller.unlockCustomerAccount();
                     case "12" -> controller.unlockEmployeeAccount();
                     case "0" -> {

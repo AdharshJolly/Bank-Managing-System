@@ -125,6 +125,9 @@ public class AccountController {
 
         System.out.print("Initial Balance: ");
         double balance = Double.parseDouble(scanner.nextLine().trim());
+        if (type == 1 && balance < 500) {
+            throw new IllegalArgumentException("Savings Account requires a minimum opening balance of 500.00.");
+        }
 
         System.out.println("Privilege Tier: 1=Platinum  2=Gold  3=Silver  4=Bronze");
         System.out.print("Choose (1-4): ");
@@ -317,6 +320,23 @@ public class AccountController {
         activeUserAccount.setPinNumber(newPin);
         repository.save(activeUserAccount);
         System.out.println("PIN changed successfully.");
+    }
+
+    public void searchByName() {
+        System.out.print("Search name: ");
+        String query = scanner.nextLine().trim();
+        var results = repository.findByName(query);
+        if (results.isEmpty()) {
+            System.out.println("No accounts found matching \"" + query + "\".");
+            return;
+        }
+        System.out.println("\n========= Search Results =========");
+        for (Account a : results) {
+            System.out.printf("%-15d %-25s %-10s %10.2f%n",
+                    a.getAccountNumber(), a.getName(),
+                    a.isActive() ? "ACTIVE" : "INACTIVE", a.getBalance());
+        }
+        System.out.println("=================================");
     }
 
     public void unlockCustomerAccount() {

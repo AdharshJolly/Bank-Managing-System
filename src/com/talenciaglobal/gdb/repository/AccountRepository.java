@@ -30,4 +30,11 @@ public class AccountRepository {
     public boolean existsById(long accountNumber) {
         return store.containsKey(accountNumber);
     }
+
+    public Collection<Account> findByName(String name) {
+        String query = name.toLowerCase();
+        return store.values().stream()
+                .filter(a -> a.getName().toLowerCase().contains(query))
+                .toList();
+    }
 }
