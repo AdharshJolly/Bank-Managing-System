@@ -1,17 +1,20 @@
+import java.util.Scanner;
+
 import com.talenciaglobal.gdb.controller.AccountController;
 import com.talenciaglobal.gdb.model.Account;
-import com.talenciaglobal.gdb.model.Privilege;
 
 public class App {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        AccountController controller = new AccountController(scanner);
 
-        Account a = new Account();
-        a.setName("Adharsh");
-        a.setBalance(100000);
-        a.setAccountNumber(1);
-        a.setPrivilege(Privilege.Platinum);
+        System.out.println("=== GlobalDigitalBank ===");
+        Account account = controller.create();
 
-        AccountController controller = new AccountController();
-        controller.display(a);
+        System.out.println("\nAccount created. Activating...");
+        account.activateAccount();
+
+        controller.display(account);
+        scanner.close();
     }
 }

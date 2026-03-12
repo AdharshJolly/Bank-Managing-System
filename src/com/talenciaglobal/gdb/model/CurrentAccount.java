@@ -26,7 +26,16 @@ public class CurrentAccount extends Account {
     }
 
     public void setRegistrationNumber(String registrationNumber) {
+        if (registrationNumber == null || registrationNumber.isBlank()) {
+            throw new IllegalArgumentException("Registration number must not be blank.");
+        }
         this.registrationNumber = registrationNumber;
     }
 
+    // Allows balance to go negative up to the overdraft limit for this privilege
+    // tier.
+    @Override
+    protected double getMinimumBalance() {
+        return getPrivilege() != null ? -getPrivilege().getOverdraftLimit() : 0;
+    }
 }
