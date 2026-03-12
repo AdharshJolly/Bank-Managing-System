@@ -7,12 +7,15 @@ import com.talenciaglobal.gdb.model.Account;
 import com.talenciaglobal.gdb.model.CurrentAccount;
 import com.talenciaglobal.gdb.model.Privilege;
 import com.talenciaglobal.gdb.model.SavingsAccount;
+import com.talenciaglobal.gdb.repository.AccountRepository;
 
 public class AccountController {
     private final Scanner scanner;
+    private final AccountRepository repository;
 
-    public AccountController(Scanner scanner) {
+    public AccountController(Scanner scanner, AccountRepository repository) {
         this.scanner = scanner;
+        this.repository = repository;
     }
 
     public Account create() {
@@ -68,7 +71,76 @@ public class AccountController {
         account.setPinNumber(pin);
         account.setBalance(balance);
         account.setPrivilege(privilege);
+        repository.save(account);
+        System.out.println("Account created successfully. Account Number: " + account.getAccountNumber());
         return account;
+    }
+
+    public void activateAccount() {
+        Account account = findAccountOrThrow();
+        account.activateAccount();
+        repository.save(account);
+        System.out.println("Account " + account.getAccountNumber() + " activated successfully.");
+    }
+
+    public void closeAccount() {
+        Account account = findAccountOrThrow();
+        account.closeAccount();
+        repository.save(account);
+        System.out.println("Account " + account.getAccountNumber() + " closed.");
+    }
+
+    public void deposit() {
+        Account account = findAccountOrThrow();
+        System.out.print("Deposit amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+        account.deposit(amount);
+        repository.save(account);
+        System.out.printf("Deposited %.2f. New balance: %.2f%n", amount, account.getBalance());
+    }
+
+    public void withdraw() {
+        Account account = findAccountOrThrow();
+        System.out.print("Withdrawal amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+        account.withdraw(amount);
+        repository.save(account);
+        System.out.printf("Withdrew %.2f. New balance: %.2f%n", amount, account.getBalance());
+    }
+
+    public void transfer() {
+        System.out.print("Source Account Number: ");
+        long fromId = Long.parseLong(scanner.nextLine().trim());
+        System.out.print("Target Account Number: ");
+        long toId = Long.parseLong(scanner.nextLine().trim());
+        System.out.print("Transfer amount: ");
+        double amount = Double.parseDouble(scanner.nextLine().trim());
+
+        Account source = repository.findById(fromId)
+                .orElseThrow(() -> new IllegalArgumentException("Source account not found: " + fromId));
+        Account target = repository.findById(toId)
+                .orElseThrow(() -> new IllegalArgumentException("Target account not found: " + toId));
+
+        source.withdraw(amount);
+        target.deposit(amount);
+        repository.save(source);
+        repository.save(target);
+        System.out.printf("Transferred %.2f from %d to %d.%n", amount, fromId, toId);
+    }
+
+    public void listAll() {
+        var accounts = repository.findAll();
+        if (accounts.isEmpty()) {
+            System.out.println("No accounts found.");
+            return;
+        }
+        System.out.println("\n========= All Accounts =========");
+        for (Account a : accounts) {
+            System.out.printf("%-15d %-25s %-10s %10.2f%n",
+                    a.getAccountNumber(), a.getName(),
+                    a.isActive() ? "ACTIVE" : "INACTIVE", a.getBalance());
+        }
+        System.out.println("=================================");
     }
 
     public void display(Account account) {
@@ -94,5 +166,12 @@ public class AccountController {
             System.out.printf("Overdraft Limit: %.0f%n", ca.getPrivilege().getOverdraftLimit());
         }
         System.out.println("---------------------------------------");
+    }
+
+    private Account findAccountOrThrow() {
+        System.out.print("Account Number: ");
+        long id = Long.parseLong(scanner.nextLine().trim());
+        return repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
     }
 }

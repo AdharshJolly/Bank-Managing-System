@@ -3,8 +3,8 @@ package com.talenciaglobal.gdb.model;
 import java.time.LocalDate;
 
 public class Account {
-    private static int accountNumberSeed = 1000;
-    private final int accountNumber;
+    private static long accountNumberSeed = 10000001000L;
+    private final long accountNumber;
     private String name;
     private String pinNumber;
     private double balance;
@@ -18,11 +18,11 @@ public class Account {
         this.accountNumber = accountNumberSeed++;
     }
 
-    public static int getAccountNumberSeed() {
+    public static long getAccountNumberSeed() {
         return accountNumberSeed;
     }
 
-    public int getAccountNumber() {
+    public long getAccountNumber() {
         return accountNumber;
     }
 
