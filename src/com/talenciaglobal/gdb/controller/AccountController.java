@@ -42,9 +42,20 @@ public class AccountController {
         String pin = scanner.nextLine().trim();
         BankEmployee emp = employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
-        if (!emp.authenticate(pin)) {
-            throw new IllegalArgumentException("Incorrect PIN.");
+        if (emp.isLoginLocked()) {
+            throw new IllegalStateException(
+                    "Employee account is locked after too many failed attempts. Contact an administrator.");
         }
+        if (!emp.authenticate(pin)) {
+            emp.recordFailedLoginAttempt();
+            if (emp.isLoginLocked()) {
+                throw new IllegalArgumentException(
+                        "Incorrect PIN. Employee account is now LOCKED. Contact an administrator.");
+            }
+            throw new IllegalArgumentException(
+                    "Incorrect PIN. " + emp.getRemainingLoginAttempts() + " attempt(s) remaining.");
+        }
+        emp.resetLoginAttempts();
         this.activeEmployee = emp;
         System.out.println("Welcome, " + emp.getEmployeeName() + " (" + emp.getRole() + ")!");
     }
@@ -64,9 +75,22 @@ public class AccountController {
         if (!account.isActive()) {
             throw new IllegalStateException("Account is not active. Please visit a branch.");
         }
-        if (!account.authenticate(pin)) {
-            throw new IllegalArgumentException("Incorrect PIN.");
+        if (account.isLoginLocked()) {
+            throw new IllegalStateException(
+                    "Account is locked due to too many failed PIN attempts. Please visit a branch.");
         }
+        if (!account.authenticate(pin)) {
+            account.recordFailedLoginAttempt();
+            repository.save(account);
+            if (account.isLoginLocked()) {
+                throw new IllegalArgumentException(
+                        "Incorrect PIN. Account is now LOCKED after 3 failed attempts. Please visit a branch.");
+            }
+            throw new IllegalArgumentException(
+                    "Incorrect PIN. " + account.getRemainingLoginAttempts() + " attempt(s) remaining.");
+        }
+        account.resetLoginAttempts();
+        repository.save(account);
         this.activeUserAccount = account;
         System.out.println("Welcome, " + account.getName() + "!");
     }
@@ -80,7 +104,7 @@ public class AccountController {
     // All ask for account numbers — the employee operates on any customer.
 
     public Account create() {
-        System.out.println("\n-------- Create New Account --------");
+        requireRole(activeEmployee.getRole().canCreateAccounts(), "Create Account requires MANAGER or ADMIN role.");
         System.out.println(
                 "Creating on behalf of: " + activeEmployee.getEmployeeName() + " [" + activeEmployee.getRole() + "]");
         System.out.println("Account Type:");
@@ -140,6 +164,7 @@ public class AccountController {
     }
 
     public void activateAccount() {
+        requireRole(activeEmployee.getRole().canActivateAccounts(), "Activate Account requires MANAGER or ADMIN role.");
         Account account = findAccountByNumber();
         account.activateAccount();
         repository.save(account);
@@ -147,6 +172,7 @@ public class AccountController {
     }
 
     public void closeAccount() {
+        requireRole(activeEmployee.getRole().canCloseAccounts(), "Close Account requires MANAGER or ADMIN role.");
         Account account = findAccountByNumber();
         account.closeAccount();
         repository.save(account);
@@ -197,6 +223,7 @@ public class AccountController {
     }
 
     public void listAll() {
+        requireRole(activeEmployee.getRole().canListAllAccounts(), "List All Accounts requires MANAGER or ADMIN role.");
         var accounts = repository.findAll();
         if (accounts.isEmpty()) {
             System.out.println("No accounts found.");
@@ -212,6 +239,7 @@ public class AccountController {
     }
 
     public void applyInterest() {
+        requireRole(activeEmployee.getRole().canApplyInterest(), "Apply Interest requires MANAGER or ADMIN role.");
         Account account = findAccountByNumber();
         if (!(account instanceof SavingsAccount sa)) {
             throw new IllegalArgumentException("Interest can only be applied to Savings Accounts.");
@@ -272,7 +300,32 @@ public class AccountController {
         displayTransactionHistory(activeUserAccount);
     }
 
-    // ──────────────── Shared helpers ────────────────
+    public void unlockCustomerAccount() {
+        requireRole(activeEmployee.getRole().canUnlockCustomers(),
+                "Unlock Customer Account requires MANAGER or ADMIN role.");
+        Account account = findAccountByNumber();
+        if (!account.isLoginLocked()) {
+            throw new IllegalStateException("Account " + account.getAccountNumber() + " is not locked.");
+        }
+        account.unlockLogin();
+        repository.save(account);
+        System.out.println("Account " + account.getAccountNumber() + " (" + account.getName() + ") has been unlocked.");
+    }
+
+    public void unlockEmployeeAccount() {
+        requireRole(activeEmployee.getRole().canUnlockEmployees(), "Unlock Employee Account requires ADMIN role.");
+        System.out.print("Employee ID to unlock: ");
+        String id = scanner.nextLine().trim();
+        BankEmployee emp = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
+        if (!emp.isLoginLocked()) {
+            throw new IllegalStateException("Employee " + id + " is not locked.");
+        }
+        emp.unlockLogin();
+        System.out.println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been unlocked.");
+    }
+
+    // ────────────────────── Shared helpers ──────────────────────
 
     public void display(Account account) {
         System.out.println("\n------------Account Details------------");
@@ -318,6 +371,12 @@ public class AccountController {
                     t.getTimestamp().toString().replace("T", " ").substring(0, 19));
         }
         System.out.println("=".repeat(75));
+    }
+
+    private void requireRole(boolean permitted, String message) {
+        if (!permitted) {
+            throw new IllegalStateException("Access denied. " + message);
+        }
     }
 
     private Account findAccountByNumber() {

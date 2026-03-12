@@ -6,6 +6,9 @@ public class BankEmployee implements Employee {
     private String employeeName;
     private EmployeeRole role;
     private String pin;
+    private static final int MAX_LOGIN_ATTEMPTS = 3;
+    private int failedLoginAttempts = 0;
+    private boolean loginLocked = false;
 
     public BankEmployee(String employeeName, EmployeeRole role, String pin) {
         if (employeeName == null || employeeName.isBlank()) {
@@ -26,6 +29,33 @@ public class BankEmployee implements Employee {
     @Override
     public boolean authenticate(String pin) {
         return this.pin != null && this.pin.equals(pin);
+    }
+
+    public boolean isLoginLocked() {
+        return loginLocked;
+    }
+
+    public int getRemainingLoginAttempts() {
+        return MAX_LOGIN_ATTEMPTS - failedLoginAttempts;
+    }
+
+    public void recordFailedLoginAttempt() {
+        if (loginLocked)
+            return;
+        failedLoginAttempts++;
+        if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+            loginLocked = true;
+        }
+    }
+
+    public void resetLoginAttempts() {
+        failedLoginAttempts = 0;
+        loginLocked = false;
+    }
+
+    public void unlockLogin() {
+        loginLocked = false;
+        failedLoginAttempts = 0;
     }
 
     @Override

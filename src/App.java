@@ -69,6 +69,7 @@ public class App {
             System.out.println("  8. Close Account");
             System.out.println("  9. Apply Interest (Savings)");
             System.out.println(" 10. View Transaction History");
+            System.out.println(" 11. Unlock Customer Account");
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
 
@@ -87,6 +88,7 @@ public class App {
                     case "8" -> controller.closeAccount();
                     case "9" -> controller.applyInterest();
                     case "10" -> controller.viewTransactionHistory();
+                    case "11" -> controller.unlockCustomerAccount();
                     case "0" -> {
                         controller.logoutEmployee();
                         active = false;

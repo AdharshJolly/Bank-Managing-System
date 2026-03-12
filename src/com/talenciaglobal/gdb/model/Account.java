@@ -18,6 +18,10 @@ public class Account implements User {
     private Privilege privilege;
     private final List<Transaction> transactions = new ArrayList<>();
 
+    private static final int MAX_LOGIN_ATTEMPTS = 3;
+    private int failedLoginAttempts = 0;
+    private boolean loginLocked = false;
+
     public Account() {
         this.accountNumber = accountNumberSeed++;
     }
@@ -33,6 +37,33 @@ public class Account implements User {
     @Override
     public boolean authenticate(String pin) {
         return this.pinNumber != null && this.pinNumber.equals(pin);
+    }
+
+    public boolean isLoginLocked() {
+        return loginLocked;
+    }
+
+    public int getRemainingLoginAttempts() {
+        return MAX_LOGIN_ATTEMPTS - failedLoginAttempts;
+    }
+
+    public void recordFailedLoginAttempt() {
+        if (loginLocked)
+            return;
+        failedLoginAttempts++;
+        if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+            loginLocked = true;
+        }
+    }
+
+    public void resetLoginAttempts() {
+        failedLoginAttempts = 0;
+        loginLocked = false;
+    }
+
+    public void unlockLogin() {
+        loginLocked = false;
+        failedLoginAttempts = 0;
     }
 
     public String getName() {
