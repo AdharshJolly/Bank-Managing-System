@@ -132,6 +132,7 @@ public class App {
             System.out.println("  3. Withdraw");
             System.out.println("  4. Transfer");
             System.out.println("  5. Transaction History");
+            System.out.println("  6. Change PIN");
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
 
@@ -145,6 +146,7 @@ public class App {
                     case "3" -> controller.withdrawOwn();
                     case "4" -> controller.transferFromOwn();
                     case "5" -> controller.viewOwnTransactionHistory();
+                    case "6" -> controller.changeOwnPin();
                     case "0" -> {
                         controller.logoutUser();
                         active = false;

@@ -301,6 +301,24 @@ public class AccountController {
         displayTransactionHistory(activeUserAccount);
     }
 
+    public void changeOwnPin() {
+        System.out.print("Current PIN: ");
+        String current = scanner.nextLine().trim();
+        if (!activeUserAccount.authenticate(current)) {
+            throw new IllegalArgumentException("Incorrect current PIN.");
+        }
+        System.out.print("New PIN (4 digits): ");
+        String newPin = scanner.nextLine().trim();
+        System.out.print("Confirm new PIN: ");
+        String confirm = scanner.nextLine().trim();
+        if (!newPin.equals(confirm)) {
+            throw new IllegalArgumentException("PINs do not match. PIN was not changed.");
+        }
+        activeUserAccount.setPinNumber(newPin);
+        repository.save(activeUserAccount);
+        System.out.println("PIN changed successfully.");
+    }
+
     public void unlockCustomerAccount() {
         requireRole(activeEmployee.getRole().canUnlockCustomers(),
                 "Unlock Customer Account requires MANAGER or ADMIN role.");
