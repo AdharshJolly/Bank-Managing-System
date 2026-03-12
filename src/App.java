@@ -75,6 +75,7 @@ public class App {
                 System.out.println("  9. Apply Interest (Savings)");
                 System.out.println(" 11. Unlock Customer Account");
                 System.out.println(" 13. Change Account Privilege");
+                System.out.println(" 14. Batch Apply Interest (All Savings)");
             }
             // Admin only
             if (role.canUnlockEmployees()) {
@@ -100,7 +101,10 @@ public class App {
                     case "10" -> controller.viewTransactionHistory();
                     case "S" -> controller.searchByName();
                     case "11" -> controller.unlockCustomerAccount();
-                    case "12" -> controller.unlockEmployeeAccount();                    case "13" -> controller.changePrivilege();                    case "0" -> {
+                    case "12" -> controller.unlockEmployeeAccount();
+                    case "13" -> controller.changePrivilege();
+                    case "14" -> controller.batchApplyInterest();
+                    case "0" -> {
                         controller.logoutEmployee();
                         active = false;
                     }

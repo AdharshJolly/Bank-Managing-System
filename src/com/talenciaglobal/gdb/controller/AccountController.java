@@ -1,6 +1,7 @@
 package com.talenciaglobal.gdb.controller;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Scanner;
 
 import com.talenciaglobal.gdb.model.Account;
@@ -253,6 +254,30 @@ public class AccountController {
         repository.save(sa);
         System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
                 interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
+    }
+
+    public void batchApplyInterest() {
+        requireRole(activeEmployee.getRole().canApplyInterest(), "Batch Interest requires MANAGER or ADMIN role.");
+        Collection<Account> all = repository.findAll();
+        int count = 0;
+        double total = 0.0;
+        System.out.println("\n--- Batch Interest Run ---");
+        System.out.printf("%-15s %-20s %-10s %-12s%n", "Account", "Name", "Rate", "Interest");
+        System.out.println("---------------------------------------------------");
+        for (Account a : all) {
+            if (a instanceof SavingsAccount sa && sa.isActive()) {
+                double interest = sa.calculateInterest();
+                sa.depositInterest(interest);
+                repository.save(sa);
+                System.out.printf("%-15d %-20s %-10.1f%% %-12.2f%n",
+                        sa.getAccountNumber(), sa.getName(),
+                        sa.getPrivilege().getInterestRate(), interest);
+                count++;
+                total += interest;
+            }
+        }
+        System.out.println("---------------------------------------------------");
+        System.out.printf("Applied interest to %d account(s). Total credited: %.2f%n", count, total);
     }
 
     public void viewTransactionHistory() {
