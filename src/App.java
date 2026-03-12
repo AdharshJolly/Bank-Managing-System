@@ -62,27 +62,35 @@ public class App {
             EmployeeRole role = emp.getRole();
             System.out.println("\n===== Employee Portal =====\n  " + emp.getEmployeeName() + " [" + role + "]");
             System.out.println("---------------------------");
+            // Manager and above
+            if (role.canCreateAccounts()) {
+                System.out.println("  1. Create Account");
+                System.out.println("  2. Activate Account");
+            }
             // Teller and above
             System.out.println("  3. Deposit");
             System.out.println("  4. Withdraw");
             System.out.println("  5. Transfer");
             System.out.println("  6. View Account");
-            System.out.println(" 10. View Transaction History");
-            System.out.println("  S. Search Customer by Name");
-            // Manager and above
+            // Manager and above (continued)
             if (role.canCreateAccounts()) {
-                System.out.println("  1. Create Account");
-                System.out.println("  2. Activate Account");
                 System.out.println("  7. List All Accounts");
                 System.out.println("  8. Close Account");
                 System.out.println("  9. Apply Interest (Savings)");
+            }
+            // Teller and above (continued)
+            System.out.println(" 10. View Transaction History");
+            // Manager and above (continued)
+            if (role.canCreateAccounts()) {
                 System.out.println(" 11. Unlock Customer Account");
-                System.out.println(" 13. Change Account Privilege");
-                System.out.println(" 14. Batch Apply Interest (All Savings)");
             }
             // Admin only
             if (role.canUnlockEmployees()) {
                 System.out.println(" 12. Unlock Employee Account");
+            }
+            if (role.canCreateAccounts()) {
+                System.out.println(" 13. Change Account Privilege");
+                System.out.println(" 14. Batch Apply Interest (All Savings)");
             }
             if (role.canManageEmployees()) {
                 System.out.println(" 15. Create Employee");
@@ -90,6 +98,8 @@ public class App {
                 System.out.println(" 17. List All Employees");
                 System.out.println(" 18. View Audit Log");
             }
+            // Teller and above (always last)
+            System.out.println("  S. Search Customer by Name");
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
 
