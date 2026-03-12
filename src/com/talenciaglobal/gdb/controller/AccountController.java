@@ -364,6 +364,23 @@ public class AccountController {
         System.out.println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been unlocked.");
     }
 
+    public void changePrivilege() {
+        requireRole(activeEmployee.getRole().canChangePrivilege(), "Change Privilege requires MANAGER or ADMIN role.");
+        Account account = findAccountByNumber();
+        System.out.println("Current privilege: " + account.getPrivilege());
+        System.out.println("New Privilege Tier: 1=Platinum  2=Gold  3=Silver  4=Bronze");
+        System.out.print("Choose (1-4): ");
+        int choice = Integer.parseInt(scanner.nextLine().trim());
+        if (choice < 1 || choice > 4) {
+            throw new IllegalArgumentException("Invalid privilege choice.");
+        }
+        Privilege newPrivilege = Privilege.values()[choice - 1];
+        account.setPrivilege(newPrivilege);
+        repository.save(account);
+        System.out.println("Privilege for account " + account.getAccountNumber()
+                + " updated to " + newPrivilege + ".");
+    }
+
     // ────────────────────── Shared helpers ──────────────────────
 
     public void display(Account account) {

@@ -30,4 +30,8 @@ public enum EmployeeRole {
     public boolean canUnlockEmployees() {
         return this == ADMIN;
     }
+
+    public boolean canChangePrivilege() {
+        return this == MANAGER || this == ADMIN;
+    }
 }
