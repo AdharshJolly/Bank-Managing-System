@@ -7,6 +7,7 @@ import com.talenciaglobal.gdb.model.Account;
 import com.talenciaglobal.gdb.model.CurrentAccount;
 import com.talenciaglobal.gdb.model.Privilege;
 import com.talenciaglobal.gdb.model.SavingsAccount;
+import com.talenciaglobal.gdb.model.Transaction;
 import com.talenciaglobal.gdb.repository.AccountRepository;
 
 public class AccountController {
@@ -121,8 +122,8 @@ public class AccountController {
         Account target = repository.findById(toId)
                 .orElseThrow(() -> new IllegalArgumentException("Target account not found: " + toId));
 
-        source.withdraw(amount);
-        target.deposit(amount);
+        source.withdrawTransfer(amount);
+        target.depositTransfer(amount);
         repository.save(source);
         repository.save(target);
         System.out.printf("Transferred %.2f from %d to %d.%n", amount, fromId, toId);
@@ -175,10 +176,31 @@ public class AccountController {
             throw new IllegalArgumentException("Interest can only be applied to Savings Accounts.");
         }
         double interest = sa.calculateInterest();
-        sa.deposit(interest);
+        sa.depositInterest(interest);
         repository.save(sa);
         System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
                 interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
+    }
+
+    public void viewTransactionHistory() {
+        Account account = findAccountOrThrow();
+        var txns = account.getTransactions();
+        if (txns.isEmpty()) {
+            System.out.println("No transactions found for account " + account.getAccountNumber() + ".");
+            return;
+        }
+        System.out.println("\n===== Transaction History: " + account.getAccountNumber() + " =====");
+        System.out.printf("%-6s %-18s %12s %14s  %s%n", "TxID", "Type", "Amount", "Balance After", "Timestamp");
+        System.out.println("-".repeat(75));
+        for (Transaction t : txns) {
+            System.out.printf("%-6d %-18s %12.2f %14.2f  %s%n",
+                    t.getTransactionId(),
+                    t.getType(),
+                    t.getAmount(),
+                    t.getBalanceAfter(),
+                    t.getTimestamp().toString().replace("T", " ").substring(0, 19));
+        }
+        System.out.println("=".repeat(75));
     }
 
     private Account findAccountOrThrow() {

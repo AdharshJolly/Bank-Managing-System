@@ -21,6 +21,7 @@ public class App {
             System.out.println("  7. List All Accounts");
             System.out.println("  8. Close Account");
             System.out.println("  9. Apply Interest (Savings only)");
+            System.out.println(" 10. View Transaction History");
             System.out.println("  0. Exit");
             System.out.print("Choose: ");
 
@@ -44,8 +45,9 @@ public class App {
                     case "7" -> controller.listAll();
                     case "8" -> controller.closeAccount();
                     case "9" -> controller.applyInterest();
+                    case "10" -> controller.viewTransactionHistory();
                     case "0" -> running = false;
-                    default -> System.out.println("Invalid option. Please choose 0-8.");
+                    default -> System.out.println("Invalid option. Please choose 0-10.");
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 System.out.println("Error: " + e.getMessage());

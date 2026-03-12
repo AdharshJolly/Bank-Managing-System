@@ -1,6 +1,9 @@
 package com.talenciaglobal.gdb.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Account {
     private static long accountNumberSeed = 10000001000L;
@@ -13,6 +16,7 @@ public class Account {
     private LocalDate closedDate;
     // Has-A: one Account has one Privilege
     private Privilege privilege;
+    private final List<Transaction> transactions = new ArrayList<>();
 
     public Account() {
         this.accountNumber = accountNumberSeed++;
@@ -82,6 +86,10 @@ public class Account {
         this.privilege = privilege;
     }
 
+    public List<Transaction> getTransactions() {
+        return Collections.unmodifiableList(transactions);
+    }
+
     public void activateAccount() {
         if (isActive) {
             throw new IllegalStateException("Account is already active.");
@@ -106,6 +114,7 @@ public class Account {
             throw new IllegalArgumentException("Deposit amount must be > 0.");
         }
         this.balance += amount;
+        transactions.add(new Transaction(TransactionType.DEPOSIT, amount, this.balance, this.accountNumber));
     }
 
     public void withdraw(double amount) {
@@ -121,6 +130,48 @@ public class Account {
                     "Insufficient funds. Max withdrawable: " + (balance - minimumBalance));
         }
         this.balance -= amount;
+        transactions.add(new Transaction(TransactionType.WITHDRAWAL, amount, this.balance, this.accountNumber));
+    }
+
+    // Called internally for transfer credits — records TRANSFER_CREDIT type
+    public void depositTransfer(double amount) {
+        if (!isActive) {
+            throw new IllegalStateException("Cannot deposit into an inactive account.");
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Transfer amount must be > 0.");
+        }
+        this.balance += amount;
+        transactions.add(new Transaction(TransactionType.TRANSFER_CREDIT, amount, this.balance, this.accountNumber));
+    }
+
+    // Called internally for transfer debits — records TRANSFER_DEBIT type
+    public void withdrawTransfer(double amount) {
+        if (!isActive) {
+            throw new IllegalStateException("Cannot withdraw from an inactive account.");
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Transfer amount must be > 0.");
+        }
+        double minimumBalance = getMinimumBalance();
+        if (balance - amount < minimumBalance) {
+            throw new IllegalArgumentException(
+                    "Insufficient funds. Max withdrawable: " + (balance - minimumBalance));
+        }
+        this.balance -= amount;
+        transactions.add(new Transaction(TransactionType.TRANSFER_DEBIT, amount, this.balance, this.accountNumber));
+    }
+
+    // Used by applyInterest — records INTEREST type
+    public void depositInterest(double amount) {
+        if (!isActive) {
+            throw new IllegalStateException("Cannot apply interest to an inactive account.");
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Interest amount must be > 0.");
+        }
+        this.balance += amount;
+        transactions.add(new Transaction(TransactionType.INTEREST, amount, this.balance, this.accountNumber));
     }
 
     // Subclasses override this to define the floor balance (e.g. overdraft for
