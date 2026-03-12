@@ -23,7 +23,11 @@ src/
 ├── App.java                                  ← Entry point / interactive menu
 └── com/talenciaglobal/gdb/
     ├── model/
-    │   ├── Account.java                      ← Base class (deposit, withdraw, lifecycle)
+    │   ├── User.java                         ← Interface: customer identity + PIN auth
+    │   ├── Employee.java                     ← Interface: bank staff identity + role
+    │   ├── EmployeeRole.java                 ← Enum: TELLER, MANAGER, ADMIN
+    │   ├── BankEmployee.java                 ← Implements Employee (EMP0001 IDs)
+    │   ├── Account.java                      ← Implements User; base class (deposit, withdraw, lifecycle)
     │   ├── SavingsAccount.java               ← Personal accounts (interest, DOB, phone)
     │   ├── CurrentAccount.java               ← Business accounts (overdraft logic)
     │   ├── Privilege.java                    ← Tier enum with interest rate + overdraft limit

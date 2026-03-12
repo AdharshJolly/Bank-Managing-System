@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Account {
+public class Account implements User {
     private static long accountNumberSeed = 10000001000L;
     private final long accountNumber;
     private String name;
@@ -28,6 +28,11 @@ public class Account {
 
     public long getAccountNumber() {
         return accountNumber;
+    }
+
+    @Override
+    public boolean authenticate(String pin) {
+        return this.pinNumber != null && this.pinNumber.equals(pin);
     }
 
     public String getName() {
