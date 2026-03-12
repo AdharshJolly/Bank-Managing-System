@@ -4,23 +4,59 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 import com.talenciaglobal.gdb.model.Account;
+import com.talenciaglobal.gdb.model.BankEmployee;
 import com.talenciaglobal.gdb.model.CurrentAccount;
 import com.talenciaglobal.gdb.model.Privilege;
 import com.talenciaglobal.gdb.model.SavingsAccount;
 import com.talenciaglobal.gdb.model.Transaction;
 import com.talenciaglobal.gdb.repository.AccountRepository;
+import com.talenciaglobal.gdb.repository.EmployeeRepository;
 
 public class AccountController {
     private final Scanner scanner;
     private final AccountRepository repository;
+    private final EmployeeRepository employeeRepository;
+    private BankEmployee activeEmployee;
 
-    public AccountController(Scanner scanner, AccountRepository repository) {
+    public AccountController(Scanner scanner, AccountRepository repository, EmployeeRepository employeeRepository) {
         this.scanner = scanner;
         this.repository = repository;
+        this.employeeRepository = employeeRepository;
+    }
+
+    public BankEmployee getActiveEmployee() {
+        return activeEmployee;
+    }
+
+    public void loginEmployee() {
+        System.out.print("Employee ID (e.g. EMP0001): ");
+        String id = scanner.nextLine().trim();
+        System.out.print("PIN: ");
+        String pin = scanner.nextLine().trim();
+        BankEmployee emp = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
+        if (!emp.authenticate(pin)) {
+            throw new IllegalArgumentException("Incorrect PIN.");
+        }
+        this.activeEmployee = emp;
+        System.out.println("Welcome, " + emp.getEmployeeName() + " (" + emp.getRole() + ")!");
+    }
+
+    public void logoutEmployee() {
+        if (activeEmployee == null) {
+            throw new IllegalStateException("No employee is currently logged in.");
+        }
+        System.out.println("Goodbye, " + activeEmployee.getEmployeeName() + "!");
+        activeEmployee = null;
     }
 
     public Account create() {
+        if (activeEmployee == null) {
+            throw new IllegalStateException("Access denied. An employee must be logged in to create an account.");
+        }
         System.out.println("\n-------- Create New Account --------");
+        System.out.println(
+                "Creating on behalf of: " + activeEmployee.getEmployeeName() + " [" + activeEmployee.getRole() + "]");
         System.out.println("Account Type:");
         System.out.println("  1. Savings Account");
         System.out.println("  2. Current Account");

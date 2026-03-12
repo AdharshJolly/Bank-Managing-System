@@ -9,4 +9,6 @@ public interface Employee {
     String getEmployeeName();
 
     EmployeeRole getRole();
+
+    boolean authenticate(String pin);
 }

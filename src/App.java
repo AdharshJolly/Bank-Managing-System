@@ -1,18 +1,37 @@
 import java.util.Scanner;
 
 import com.talenciaglobal.gdb.controller.AccountController;
+import com.talenciaglobal.gdb.model.BankEmployee;
+import com.talenciaglobal.gdb.model.EmployeeRole;
 import com.talenciaglobal.gdb.repository.AccountRepository;
+import com.talenciaglobal.gdb.repository.EmployeeRepository;
 
 public class App {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        AccountRepository repository = new AccountRepository();
-        AccountController controller = new AccountController(scanner, repository);
+        AccountRepository accountRepository = new AccountRepository();
+        EmployeeRepository employeeRepository = new EmployeeRepository();
+
+        // Pre-seeded staff
+        employeeRepository.save(new BankEmployee("Alice Admin", EmployeeRole.ADMIN, "1111"));
+        employeeRepository.save(new BankEmployee("Bob Teller", EmployeeRole.TELLER, "2222"));
+        employeeRepository.save(new BankEmployee("Carol Manager", EmployeeRole.MANAGER, "3333"));
+
+        AccountController controller = new AccountController(scanner, accountRepository, employeeRepository);
 
         boolean running = true;
         while (running) {
+            BankEmployee active = controller.getActiveEmployee();
+            String sessionLine = active != null
+                    ? "Logged in: " + active.getEmployeeName() + " [" + active.getRole() + "]"
+                    : "Not logged in";
             System.out.println("\n===== GlobalDigitalBank =====");
-            System.out.println("  1. Create Account");
+            System.out.println("  " + sessionLine);
+            System.out.println("-----------------------------");
+            System.out.println("  E. Employee Login");
+            System.out.println("  L. Employee Logout");
+            System.out.println("-----------------------------");
+            System.out.println("  1. Create Account        (employee only)");
             System.out.println("  2. Activate Account");
             System.out.println("  3. Deposit");
             System.out.println("  4. Withdraw");
@@ -20,16 +39,18 @@ public class App {
             System.out.println("  6. View Account");
             System.out.println("  7. List All Accounts");
             System.out.println("  8. Close Account");
-            System.out.println("  9. Apply Interest (Savings only)");
+            System.out.println("  9. Apply Interest        (Savings only)");
             System.out.println(" 10. View Transaction History");
             System.out.println("  0. Exit");
             System.out.print("Choose: ");
 
-            String input = scanner.nextLine().trim();
+            String input = scanner.nextLine().trim().toUpperCase();
             System.out.println();
 
             try {
                 switch (input) {
+                    case "E" -> controller.loginEmployee();
+                    case "L" -> controller.logoutEmployee();
                     case "1" -> controller.create();
                     case "2" -> controller.activateAccount();
                     case "3" -> controller.deposit();
@@ -38,7 +59,7 @@ public class App {
                     case "6" -> {
                         System.out.print("Account Number: ");
                         long id = Long.parseLong(scanner.nextLine().trim());
-                        repository.findById(id).ifPresentOrElse(
+                        accountRepository.findById(id).ifPresentOrElse(
                                 controller::display,
                                 () -> System.out.println("Account not found."));
                     }
@@ -47,7 +68,7 @@ public class App {
                     case "9" -> controller.applyInterest();
                     case "10" -> controller.viewTransactionHistory();
                     case "0" -> running = false;
-                    default -> System.out.println("Invalid option. Please choose 0-10.");
+                    default -> System.out.println("Invalid option.");
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 System.out.println("Error: " + e.getMessage());

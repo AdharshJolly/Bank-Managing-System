@@ -5,17 +5,27 @@ public class BankEmployee implements Employee {
     private final String employeeId;
     private String employeeName;
     private EmployeeRole role;
+    private String pin;
 
-    public BankEmployee(String employeeName, EmployeeRole role) {
+    public BankEmployee(String employeeName, EmployeeRole role, String pin) {
         if (employeeName == null || employeeName.isBlank()) {
             throw new IllegalArgumentException("Employee name must not be blank.");
         }
         if (role == null) {
             throw new IllegalArgumentException("Employee role must not be null.");
         }
+        if (pin == null || !pin.matches("\\d{4}")) {
+            throw new IllegalArgumentException("Employee PIN must be exactly 4 digits.");
+        }
         this.employeeId = String.format("EMP%04d", employeeIdSeed++);
         this.employeeName = employeeName;
         this.role = role;
+        this.pin = pin;
+    }
+
+    @Override
+    public boolean authenticate(String pin) {
+        return this.pin != null && this.pin.equals(pin);
     }
 
     @Override
