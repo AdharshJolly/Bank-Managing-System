@@ -158,6 +158,7 @@ public class AccountController {
             System.out.println("Date of Birth  : " + sa.getDateOfBirth());
             System.out.println("Phone          : " + sa.getPhoneNumber());
             System.out.printf("Interest Rate  : %.1f%%%n", sa.getPrivilege().getInterestRate());
+            System.out.printf("Interest Earned: %.2f (on current balance)%n", sa.calculateInterest());
         } else if (account instanceof CurrentAccount ca) {
             System.out.println("--- Business Info ---");
             System.out.println("Company        : " + ca.getCompanyName());
@@ -166,6 +167,18 @@ public class AccountController {
             System.out.printf("Overdraft Limit: %.0f%n", ca.getPrivilege().getOverdraftLimit());
         }
         System.out.println("---------------------------------------");
+    }
+
+    public void applyInterest() {
+        Account account = findAccountOrThrow();
+        if (!(account instanceof SavingsAccount sa)) {
+            throw new IllegalArgumentException("Interest can only be applied to Savings Accounts.");
+        }
+        double interest = sa.calculateInterest();
+        sa.deposit(interest);
+        repository.save(sa);
+        System.out.printf("Interest of %.2f (%.1f%%) applied. New balance: %.2f%n",
+                interest, sa.getPrivilege().getInterestRate(), sa.getBalance());
     }
 
     private Account findAccountOrThrow() {
