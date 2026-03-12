@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import com.talenciaglobal.gdb.controller.AccountController;
@@ -62,43 +64,61 @@ public class App {
             EmployeeRole role = emp.getRole();
             System.out.println("\n===== Employee Portal =====\n  " + emp.getEmployeeName() + " [" + role + "]");
             System.out.println("---------------------------");
-            // Manager and above
+
+            // Build dynamic menu based on role
+            List<String> labels = new ArrayList<>();
+            List<Runnable> actions = new ArrayList<>();
+
             if (role.canCreateAccounts()) {
-                System.out.println("  1. Create Account");
-                System.out.println("  2. Activate Account");
+                labels.add("Create Account");
+                actions.add(() -> controller.create());
+                labels.add("Activate Account");
+                actions.add(controller::activateAccount);
             }
-            // Teller and above
-            System.out.println("  3. Deposit");
-            System.out.println("  4. Withdraw");
-            System.out.println("  5. Transfer");
-            System.out.println("  6. View Account");
-            // Manager and above (continued)
+            labels.add("Deposit");
+            actions.add(controller::deposit);
+            labels.add("Withdraw");
+            actions.add(controller::withdraw);
+            labels.add("Transfer");
+            actions.add(controller::transfer);
+            labels.add("View Account");
+            actions.add(controller::viewAccount);
             if (role.canCreateAccounts()) {
-                System.out.println("  7. List All Accounts");
-                System.out.println("  8. Close Account");
-                System.out.println("  9. Apply Interest (Savings)");
+                labels.add("List All Accounts");
+                actions.add(controller::listAll);
+                labels.add("Close Account");
+                actions.add(controller::closeAccount);
+                labels.add("Apply Interest (Savings)");
+                actions.add(controller::applyInterest);
             }
-            // Teller and above (continued)
-            System.out.println(" 10. View Transaction History");
-            // Manager and above (continued)
+            labels.add("View Transaction History");
+            actions.add(controller::viewTransactionHistory);
             if (role.canCreateAccounts()) {
-                System.out.println(" 11. Unlock Customer Account");
+                labels.add("Unlock Customer Account");
+                actions.add(controller::unlockCustomerAccount);
+                labels.add("Change Account Privilege");
+                actions.add(controller::changePrivilege);
+                labels.add("Batch Apply Interest (All Savings)");
+                actions.add(controller::batchApplyInterest);
             }
-            // Admin only
             if (role.canUnlockEmployees()) {
-                System.out.println(" 12. Unlock Employee Account");
-            }
-            if (role.canCreateAccounts()) {
-                System.out.println(" 13. Change Account Privilege");
-                System.out.println(" 14. Batch Apply Interest (All Savings)");
+                labels.add("Unlock Employee Account");
+                actions.add(controller::unlockEmployeeAccount);
             }
             if (role.canManageEmployees()) {
-                System.out.println(" 15. Create Employee");
-                System.out.println(" 16. Deactivate Employee");
-                System.out.println(" 17. List All Employees");
-                System.out.println(" 18. View Audit Log");
+                labels.add("Create Employee");
+                actions.add(controller::createEmployee);
+                labels.add("Deactivate Employee");
+                actions.add(controller::deactivateEmployee);
+                labels.add("List All Employees");
+                actions.add(controller::listAllEmployees);
+                labels.add("View Audit Log");
+                actions.add(controller::viewAuditLog);
             }
-            // Teller and above (always last)
+
+            for (int i = 0; i < labels.size(); i++) {
+                System.out.printf("%3d. %s%n", i + 1, labels.get(i));
+            }
             System.out.println("  S. Search Customer by Name");
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
@@ -107,32 +127,21 @@ public class App {
             System.out.println();
 
             try {
-                switch (input) {
-                    case "1" -> controller.create();
-                    case "2" -> controller.activateAccount();
-                    case "3" -> controller.deposit();
-                    case "4" -> controller.withdraw();
-                    case "5" -> controller.transfer();
-                    case "6" -> controller.viewAccount();
-                    case "7" -> controller.listAll();
-                    case "8" -> controller.closeAccount();
-                    case "9" -> controller.applyInterest();
-                    case "10" -> controller.viewTransactionHistory();
-                    case "S" -> controller.searchByName();
-                    case "11" -> controller.unlockCustomerAccount();
-                    case "12" -> controller.unlockEmployeeAccount();
-                    case "13" -> controller.changePrivilege();
-                    case "14" -> controller.batchApplyInterest();
-                    case "15" -> controller.createEmployee();
-                    case "16" -> controller.deactivateEmployee();
-                    case "17" -> controller.listAllEmployees();
-                    case "18" -> controller.viewAuditLog();
-                    case "0" -> {
-                        controller.logoutEmployee();
-                        active = false;
+                if (input.equalsIgnoreCase("S")) {
+                    controller.searchByName();
+                } else if (input.equals("0")) {
+                    controller.logoutEmployee();
+                    active = false;
+                } else {
+                    int choice = Integer.parseInt(input);
+                    if (choice < 1 || choice > actions.size()) {
+                        System.out.println("Invalid option.");
+                    } else {
+                        actions.get(choice - 1).run();
                     }
-                    default -> System.out.println("Invalid option.");
                 }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid option.");
             } catch (IllegalArgumentException | IllegalStateException e) {
                 System.out.println("Error: " + e.getMessage());
             }
