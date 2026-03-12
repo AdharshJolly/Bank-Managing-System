@@ -7,6 +7,7 @@ import java.util.Scanner;
 import com.talenciaglobal.gdb.model.Account;
 import com.talenciaglobal.gdb.model.BankEmployee;
 import com.talenciaglobal.gdb.model.CurrentAccount;
+import com.talenciaglobal.gdb.model.EmployeeRole;
 import com.talenciaglobal.gdb.model.Privilege;
 import com.talenciaglobal.gdb.model.SavingsAccount;
 import com.talenciaglobal.gdb.model.Transaction;
@@ -46,6 +47,9 @@ public class AccountController {
         if (emp.isLoginLocked()) {
             throw new IllegalStateException(
                     "Employee account is locked after too many failed attempts. Contact an administrator.");
+        }
+        if (!emp.isActive()) {
+            throw new IllegalStateException("Employee account has been deactivated. Contact an administrator.");
         }
         if (!emp.authenticate(pin)) {
             emp.recordFailedLoginAttempt();
@@ -404,6 +408,49 @@ public class AccountController {
         repository.save(account);
         System.out.println("Privilege for account " + account.getAccountNumber()
                 + " updated to " + newPrivilege + ".");
+    }
+
+    public void createEmployee() {
+        requireRole(activeEmployee.getRole().canManageEmployees(), "Create Employee requires ADMIN role.");
+        System.out.print("Employee name: ");
+        String name = scanner.nextLine().trim();
+        System.out.print("Role (1=TELLER  2=MANAGER  3=ADMIN): ");
+        int roleChoice = Integer.parseInt(scanner.nextLine().trim());
+        if (roleChoice < 1 || roleChoice > 3) throw new IllegalArgumentException("Invalid role choice.");
+        EmployeeRole role = EmployeeRole.values()[roleChoice - 1];
+        System.out.print("PIN (4 digits): ");
+        String pin = scanner.nextLine().trim();
+        BankEmployee emp = new BankEmployee(name, role, pin);
+        employeeRepository.save(emp);
+        System.out.println("Employee created: " + emp);
+    }
+
+    public void deactivateEmployee() {
+        requireRole(activeEmployee.getRole().canManageEmployees(), "Deactivate Employee requires ADMIN role.");
+        System.out.print("Employee ID to deactivate: ");
+        String id = scanner.nextLine().trim();
+        if (id.equals(activeEmployee.getEmployeeId())) {
+            throw new IllegalArgumentException("Cannot deactivate your own account.");
+        }
+        BankEmployee emp = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
+        emp.deactivate();
+        employeeRepository.save(emp);
+        System.out.println("Employee " + emp.getEmployeeId() + " (" + emp.getEmployeeName() + ") has been deactivated.");
+    }
+
+    public void listAllEmployees() {
+        requireRole(activeEmployee.getRole().canManageEmployees(), "List Employees requires ADMIN role.");
+        Collection<BankEmployee> all = employeeRepository.findAll();
+        System.out.println("\n===== All Employees =====");
+        System.out.printf("%-10s %-20s %-10s %-12s%n", "ID", "Name", "Role", "Status");
+        System.out.println("------------------------------------------------------");
+        for (BankEmployee emp : all) {
+            System.out.printf("%-10s %-20s %-10s %-12s%n",
+                    emp.getEmployeeId(), emp.getEmployeeName(), emp.getRole(),
+                    emp.isActive() ? "ACTIVE" : "DEACTIVATED");
+        }
+        System.out.println("======================================================");
     }
 
     // ────────────────────── Shared helpers ──────────────────────

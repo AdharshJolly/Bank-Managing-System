@@ -6,6 +6,7 @@ public class BankEmployee implements Employee {
     private String employeeName;
     private EmployeeRole role;
     private String pin;
+    private boolean isActive = true;
     private static final int MAX_LOGIN_ATTEMPTS = 3;
     private int failedLoginAttempts = 0;
     private boolean loginLocked = false;
@@ -89,6 +90,17 @@ public class BankEmployee implements Employee {
 
     @Override
     public String toString() {
-        return employeeId + " | " + employeeName + " | " + role;
+        return employeeId + " | " + employeeName + " | " + role + " | " + (isActive ? "ACTIVE" : "DEACTIVATED");
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void deactivate() {
+        if (!isActive) {
+            throw new IllegalStateException("Employee is already deactivated.");
+        }
+        this.isActive = false;
     }
 }

@@ -81,6 +81,11 @@ public class App {
             if (role.canUnlockEmployees()) {
                 System.out.println(" 12. Unlock Employee Account");
             }
+            if (role.canManageEmployees()) {
+                System.out.println(" 15. Create Employee");
+                System.out.println(" 16. Deactivate Employee");
+                System.out.println(" 17. List All Employees");
+            }
             System.out.println("  0. Logout");
             System.out.print("Choose: ");
 
@@ -104,6 +109,9 @@ public class App {
                     case "12" -> controller.unlockEmployeeAccount();
                     case "13" -> controller.changePrivilege();
                     case "14" -> controller.batchApplyInterest();
+                    case "15" -> controller.createEmployee();
+                    case "16" -> controller.deactivateEmployee();
+                    case "17" -> controller.listAllEmployees();
                     case "0" -> {
                         controller.logoutEmployee();
                         active = false;
